@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::time::Duration;
+use tokio::fs;
 use tokio::time::sleep;
 use web3::types::U64;
 
@@ -7,10 +8,12 @@ use crate::exporter::exporter::export_all;// Import the exporter function
 pub async fn stream_data(p: &str) {
     loop {
         println!("Syncing blocks...");
-        let last_synced_block = read_last_synced_block().await; //Todo: store last synced block in file
+        let mut last_synced_block = read_last_synced_block().await.expect("Todo panic message");
         let target_block = calculate_target_block(last_synced_block, p).await;
         sync_data(target_block).await; //Todo
         export_all(last_synced_block, target_block, p).await.expect("TODO: panic message");
+        last_synced_block = target_block;
+        update_last_synced_block(last_synced_block).await;
         println!("Synced data.Sleeping for 60 seconds...");
         sleep(Duration::from_secs(60)).await;
     }
@@ -47,9 +50,12 @@ async fn get_current_block_number(provider: &str) -> u64 {
     current_block_number
 }
 
-async fn read_last_synced_block() -> u64{
-    //TODO: let file_content = fs::read_to_string("last_synced_block.txt").await?;
-    // let last_synced_block = file_content.trim().parse::<u64>()?;
-    // Ok(last_synced_block)
-    1
+async fn read_last_synced_block() -> Result<u64, std::io::Error> {
+    let file_content = fs::read_to_string("src/last_synced_block.txt").await.expect("Incorrect file path");
+    let last_synced_block = file_content.trim().parse::<u64>().expect("failed to parse string in file");
+    Ok(last_synced_block)
+}
+
+async fn update_last_synced_block(block_number: u64){
+    fs::write("src/last_synced_block.txt", block_number.to_string()).await.expect("failed to write to file");
 }

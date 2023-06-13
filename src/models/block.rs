@@ -1,6 +1,8 @@
-#[derive(Debug)]
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
 pub struct Block {
-    pub number: Option<u64>,
+    pub number: Option<String>,
     pub hash: Option<String>,
     pub parent_hash: Option<String>,
     pub nonce: Option<String>,
@@ -10,16 +12,16 @@ pub struct Block {
     pub state_root: Option<String>,
     pub receipts_root: Option<String>,
     pub miner: Option<String>,
-    pub difficulty: Option<u64>,
-    pub total_difficulty: Option<u64>,
-    pub size: Option<u64>,
+    pub difficulty: Option<String>,
+    pub total_difficulty: Option<String>,
+    pub size: Option<String>,
     pub extra_data: Option<String>,
-    pub gas_limit: Option<u64>,
-    pub gas_used: Option<u64>,
-    pub timestamp: Option<u64>,
+    pub gas_limit: Option<String>,
+    pub gas_used: Option<String>,
+    pub timestamp: Option<String>,
     pub withdrawals_root: Option<String>,
-    pub transactions: Vec<u64>,
-    pub transaction_count: Option<u64>,
-    pub base_fee_per_gas: u64,
-    pub withdrawals: Vec<u64>,
+    pub transactions: Vec<String>,
+    pub transaction_count: Option<String>,
+    pub base_fee_per_gas: Option<String>,
+    pub withdrawals: Option<String>,
 }
