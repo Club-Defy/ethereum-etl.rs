@@ -1,41 +1,9 @@
-use eth_streamer::exporter::export_blocks_and_transactions::Block;
+use std::iter::Map;
+use serde_json::Value;
+use serde_json::Value::String;
+use crate::exporter::exporter::JsonRpcResponse;
+use crate::models::block::Block;
 
-//     if let Some(transactions) = json_dict.get("transactions") {
-//         if let Some(transaction_array) = transactions.as_array() {
-//             for tx in transaction_array {
-//                 if let Some(tx_dict) = tx.as_object() {
-//                     let mapped_tx = transaction_mapper::json_dict_to_transaction(tx_dict, block.timestamp);
-//                     block.transactions.push(mapped_tx);
-//                 }
-//             }
-//             block.transaction_count = Some(transaction_array.len() as u64);
-//         }
-//     }
-// //
-// //     if let Some(withdrawals) = json_dict.get("withdrawals") {
-// //         if let Some(withdrawal_array) = withdrawals.as_array() {
-// //             for withdrawal in withdrawal_array {
-// //                 if let Some(withdrawal_dict) = withdrawal.as_object() {
-// //                     let index = hex_to_dec(withdrawal_dict.get("index"));
-// //                     let validator_index = hex_to_dec(withdrawal_dict.get("validatorIndex"));
-// //                     let address = withdrawal_dict.get("address").and_then(|a| a.as_str().map(String::from));
-// //                     let amount = hex_to_dec(withdrawal_dict.get("amount"));
-// //
-// //                     let withdrawal_entry = Withdrawal {
-// //                         index,
-// //                         validator_index,
-// //                         address,
-// //                         amount,
-// //                     };
-// //
-// //                     block.withdrawals.push(withdrawal_entry);
-// //                 }
-// //             }
-// //         }
-// //     }
-// //
-// //     block
-// }
 pub fn json_dict_to_block(json_dict: Value) -> Block {
     let mut block = Block {
         number: None,
@@ -62,11 +30,7 @@ pub fn json_dict_to_block(json_dict: Value) -> Block {
         withdrawals: Vec::new(),
     };
 
-    if let Some(number) = json_dict.get("number").and_then(|v| v.as_u64()) {
-        block.number = Some(number);
-    }
-
-    //block.number = json_dict.get("number").and_then(|v| v.as_u64()).unwrap_or_default();
+    let number = json_dict.get("number").expect("couldnt fetch block number").as_str().take().unwrap();
     block.hash = json_dict.get("hash").and_then(|v| v.as_str()).map(|s| s.to_owned());
     block.parent_hash = json_dict.get("parentHash").and_then(|v| v.as_str()).map(|s| s.to_owned());
     block.nonce = json_dict.get("nonce").and_then(|v| v.as_str()).map(|s| s.to_owned());
@@ -86,18 +50,52 @@ pub fn json_dict_to_block(json_dict: Value) -> Block {
     block.base_fee_per_gas = json_dict.get("baseFeePerGas").and_then(|v| v.as_u64()).unwrap_or_default();
     block.withdrawals_root = json_dict.get("withdrawalsRoot").and_then(|v| v.as_str()).map(|s| s.to_owned());
 
-    // if let Some(transactions) = json_dict.get("transactions").and_then(|v| v.as_array()) {
-    //     for tx in transactions {
-    //         if let Some(tx_obj) = tx.as_object() {
-    //             let transaction = json_dict_to_transaction(tx_obj, block.timestamp);
-    //             block.transactions.push(transaction);
-    //         }
-    //     }
-    // }
-    //
+    if let Some(transactions) = json_dict.get("transactions").and_then(|v| v.as_array()) {
+        for tx in transactions {
+            if let Some(tx_obj) = tx.as_object() {
+                let transaction = json_dict_to_transaction();
+                block.transactions.push(transaction);
+            }
+            //block.transaction_count = Some(transaction_array.len() as u64);
+
+        }
+    }
+
+    println!("Transactions {:?}", json_dict.get("transactions"));
     // if let Some(withdrawals) = json_dict.get("withdrawals").and_then(|v| v.as_array()) {
     //     block.withdrawals = parse_withdrawals(withdrawals);
     // }
 
+
+    //
+    // if let Some(withdrawals) = json_dict.get("withdrawals") {
+    //     if let Some(withdrawal_array) = withdrawals.as_array() {
+    //         for withdrawal in withdrawal_array {
+    //             if let Some(withdrawal_dict) = withdrawal.as_object() {
+    //                 let index = hex_to_dec(withdrawal_dict.get("index"));
+    //                 let validator_index = hex_to_dec(withdrawal_dict.get("validatorIndex"));
+    //                 let address = withdrawal_dict.get("address").and_then(|a| a.as_str().map(String::from));
+    //                 let amount = hex_to_dec(withdrawal_dict.get("amount"));
+    //
+    //                 let withdrawal_entry = Withdrawal {
+    //                     index,
+    //                     validator_index,
+    //                     address,
+    //                     amount,
+    //                 };
+    //
+    //                 block.withdrawals.push(withdrawal_entry);
+    //             }
+    //         }
+    //     }
+    // }
+
     block
+
+}
+
+
+pub fn json_dict_to_transaction()-> u64{
+    //TODO
+    1
 }
