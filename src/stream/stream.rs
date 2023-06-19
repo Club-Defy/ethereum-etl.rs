@@ -1,34 +1,43 @@
-use std::error::Error;
+
 use std::time::Duration;
 use tokio::fs;
 use tokio::time::sleep;
-use web3::types::U64;
+use std::option::Option;
+use tokio_postgres::Client;
+use web3::futures::future::ok;
+use web3::futures::pending;
+use crate::exporter::export_all::export_all;
 
-use crate::exporter::exporter::export_all;// Import the exporter function
-pub async fn stream_data(p: &str) {
-    loop {
+pub async fn stream_data(p: &str, start_block: u64, end_block: Option<u64>, client: tokio_postgres::Client) -> Result<(), ()> {
+
         println!("Syncing blocks...");
-        let mut last_synced_block = read_last_synced_block().await.expect("Todo panic message");
-        let target_block = calculate_target_block(last_synced_block, p).await;
-        sync_data(target_block).await; //Todo
-        export_all(last_synced_block, target_block, p).await.expect("TODO: panic message");
-        last_synced_block = target_block;
-        update_last_synced_block(last_synced_block).await;
-        println!("Synced data.Sleeping for 60 seconds...");
-        sleep(Duration::from_secs(60)).await;
+        let mut last_synced_block = start_block;
+
+        while end_block==None || Some(last_synced_block)<end_block {
+            let target_block = calculate_target_block(last_synced_block, p).await;
+            //sync_data(target_block).await;
+            //add batches of blocks
+            export_all(last_synced_block, target_block, p, &client).await.expect("failed to export entity");
+            last_synced_block = target_block;
+            update_last_synced_block(&last_synced_block).await;
+            println!("Synced data.Sleeping for 10 seconds...");
+            //last_synced_block = Option::from(read_last_synced_block().await.expect("Todo panic message"));
+            sleep(Duration::from_secs(10)).await;
     }
+    println!("All blocks have been synced.");
+    Ok(())
 }
 
 
-async fn calculate_target_block(last_synced_block: u64,p : &str) -> u64 {
-    let block_batch_size= 5;
-    let current_block = get_current_block_number(p).await;
+async fn calculate_target_block(last_synced_block: u64, p : &str) -> u64 {
+    let block_batch_size= 5; //take from user
+    let current_block = get_current_block_number(p).await; //latest minted blockchain block
     let lag = 0; //random value
 
     let end_block = None;
 
     let target_block = current_block - lag;
-    let target_block = target_block.min(last_synced_block + block_batch_size);
+    let target_block = target_block.min(last_synced_block+block_batch_size);
     let target_block = if let Some(end_block) = end_block {
         target_block.min(end_block)
     } else {
@@ -56,6 +65,6 @@ async fn read_last_synced_block() -> Result<u64, std::io::Error> {
     Ok(last_synced_block)
 }
 
-async fn update_last_synced_block(block_number: u64){
-    fs::write("src/last_synced_block.txt", block_number.to_string()).await.expect("failed to write to file");
+async fn update_last_synced_block(block_number: &u64){
+    fs::write("src/last_synced_block.txt", block_number.to_be_bytes()).await.expect("failed to write to file");
 }

@@ -25,3 +25,4 @@ pub struct Block {
     pub base_fee_per_gas: Option<String>,
     pub withdrawals: Option<String>,
 }
+

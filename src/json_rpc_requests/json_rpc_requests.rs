@@ -1,5 +1,4 @@
 use serde::Serialize;
-use serde_json::{json, Map};
 
 #[derive(Debug, Serialize)]
 pub struct JsonRpcRequest {
