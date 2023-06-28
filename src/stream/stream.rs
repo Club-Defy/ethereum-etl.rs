@@ -56,6 +56,7 @@ async fn get_current_block_number(provider: &str) -> u64 {
     let web3 = web3::Web3::new(web3::transports::Http::new(provider).expect("Failed to create Web3 instance"));
     let block_number = web3.eth().block_number().await.expect("Failed to get current block number");
     let current_block_number = block_number.as_u64();
+    println!("Current block : {:x}", current_block_number);
     current_block_number
 }
 

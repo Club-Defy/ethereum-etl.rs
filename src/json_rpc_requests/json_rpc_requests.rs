@@ -1,3 +1,4 @@
+use std::process::id;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -12,13 +13,13 @@ pub struct JsonRpcRequest {
 pub fn json_rpc_requests() -> Vec<JsonRpcRequest> {
     let block_request = create_block_request();
     let trace_block_request = create_trace_block_request();
-    let transaction_receipt_request = create_transaction_receipt_request();
+    //let transaction_receipt_request = create_transaction_receipt_request();
     let code_request = create_code_request();
 
     vec![
         block_request,
         trace_block_request,
-        transaction_receipt_request,
+        //transaction_receipt_request,
         code_request,
     ]
 }
@@ -72,15 +73,22 @@ fn create_trace_block_request() -> JsonRpcRequest {
     }
 }
 
-fn create_transaction_receipt_request() -> JsonRpcRequest {
-    JsonRpcRequest {
-        jsonrpc: "2.0".to_string(),
-        method: "eth_getTransactionReceipt".to_string(),
-        params: vec![
-            serde_json::Value::String("0x85d995eba9763907fdf35cd2034144dd9d53ce32cbec21349d4b12823c6860c5".to_string()),
-        ],
-        id: 1,
+pub fn create_transaction_receipt_request(tx_hashes : Vec<String>) -> Vec<JsonRpcRequest> {
+
+    let mut requests = Vec::new();
+    for tx_hash in tx_hashes {
+        let request =  JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            method: "eth_getTransactionReceipt".to_string(),
+            params: vec![
+                serde_json::Value::String(tx_hash),
+            ],
+            id: 1
+        };
+        requests.push(request);
     }
+    requests
+
 }
 
 fn create_code_request() -> JsonRpcRequest {
