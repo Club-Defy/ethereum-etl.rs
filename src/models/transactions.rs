@@ -17,7 +17,7 @@ pub struct Transactions{
     //The maximum fee per gas set in the transaction
     pub gas_used: Option<String>,
     //The maximum priority gas fee set in the transaction
-    pub logs: Option<String>,
+    pub logs: Option<Vec<String>>,
     //The hash of the transaction
     pub logs_bloom: Option<String>,
     //The data sent along with the transaction

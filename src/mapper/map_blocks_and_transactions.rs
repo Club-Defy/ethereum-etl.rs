@@ -1,5 +1,5 @@
 
-use serde_json::Value;
+use serde_json::{json, Value};
 use crate::models::transactions::Transactions;
 use crate::models::block::Block;
 
@@ -22,7 +22,8 @@ pub fn json_dict_to_block(json_dict: Value) -> Block {
 
 
 pub fn json_dict_to_transaction(json_dict: Value) -> Transactions {
-    let mut txn: Transactions = serde_json::from_value(json_dict.clone()).expect("failed to deserialize");
+    println!("Value: {:?}", json_dict);
+    let mut txn: Transactions = serde_json::from_value(json_dict.clone()).expect("failed to deserialize transactions");
     println!("Transaction: {:?}", txn);
     txn
 }

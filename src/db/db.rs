@@ -52,7 +52,7 @@ pub async fn connect_to_db() -> Client {
                 effective_gas_price VARCHAR,
                 from_tx VARCHAR,
                 gas_used VARCHAR,
-                logs VARCHAR,
+                logs VARCHAR[],
                 logs_bloom VARCHAR,
                 root VARCHAR,
                 to_tx VARCHAR,

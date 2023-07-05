@@ -6,7 +6,7 @@ use crate::db::db::connect_to_db;
 use clap::Parser;
 use web3::futures::FutureExt;
 //use serde::de::Unexpected::Option;
-use crate::cli::cli::{Cli };
+use crate::cli::cli::{Cli};
 
 mod stream;
 mod provider;
