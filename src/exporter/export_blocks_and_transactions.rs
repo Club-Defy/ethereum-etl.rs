@@ -13,38 +13,27 @@ use rayon::prelude::*;
 
 pub async fn export_blocks_and_transactions(start: u64, end:u64, p: &str, client: &tokio_postgres::Client) -> Result<(), reqwest::Error> {
     let list_of_block_numbers = get_block_numbers(start, end);
-    list_of_block_numbers.par_iter().for_each(|block_number| {
-        println!("Total threads: {:?}", current_num_threads());
-        let mut rt = tokio::runtime::Runtime::new().unwrap();
+    let requests = get_blocks_and_transaction_requests(list_of_block_numbers);
+    let response = get_response(requests, p);
+    let resp_iter = response.await.unwrap();
 
-        let _ = rt.block_on(async {
-            let requests = get_blocks_and_transaction_requests(vec![*block_number]);
-            let response = get_response(requests, p);
-            let resp_iter = response.await.unwrap();
-
-            println!("Current thread: {:?}", current_thread_index());
-            for resp in resp_iter {
-                let result = resp.result;
-                let blocks = block_mapper(result);
-                println!("Mapped block");
-                for block in blocks {
-                    let block_clone = block.clone();
-                    let transactions = get_transactions(block_clone, p).await;
-                    println!("Block: {:?}", block);
-                    println!("Transactions {:?}", transactions);
-                    insert_block_data(client, block).await.expect("couldn't insert block data");
-                    for tx in transactions {
-                        insert_transaction_data(client, tx).await.expect("failed to export transactions");
-                    }
-                    println!("Inserted block data into db");
-                }
+    println!("Current thread: {:?}", current_thread_index());
+    for resp in resp_iter {
+        let result = resp.result;
+        let blocks = block_mapper(result);
+        println!("Mapped block");
+        for block in blocks {
+            let block_clone = block.clone();
+            let transactions = get_transactions(block_clone, p).await;
+            println!("Block: {:?}", block);
+            println!("Transactions {:?}", transactions);
+            insert_block_data(client, block).await.expect("couldn't insert block data");
+            for tx in transactions {
+                insert_transaction_data(client, tx).await.expect("failed to export transactions");
             }
-        });
-
-        // if let Err(err) = result {
-        //     eprintln!("Error: {:?}", err);
-        // }
-    });
+            println!("Inserted block data into db");
+        }
+    }
     Ok(())
 }
 fn block_mapper(response: Value) -> Vec<Block> {

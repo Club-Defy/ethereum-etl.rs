@@ -44,7 +44,7 @@ pub async fn connect_to_db() -> Client {
 
     client
         .execute(
-            "CREATE TABLE IF NOT EXISTS transactions (
+            "CREATE TABLE IF NOT EXISTS transactions_new (
                 block_hash VARCHAR,
                 block_number VARCHAR,
                 contract_address VARCHAR,
@@ -57,6 +57,7 @@ pub async fn connect_to_db() -> Client {
                 root VARCHAR,
                 to_tx VARCHAR,
                 transaction_index VARCHAR,
+                transaction_hash VARCHAR,
                 chain_id VARCHAR,
                 v VARCHAR,
                 r VARCHAR,
@@ -135,13 +136,13 @@ pub async fn insert_transaction_data(client: &Client, transaction: Transactions)
 
     client
         .execute(
-            "INSERT INTO transactions (
+            "INSERT INTO transactions_new (
                 block_hash,
                 block_number,
                 contract_address ,
                 cumulative_gas_used,
                 effective_gas_price,
-                from _tx,
+                from_tx,
                 gas_used,
                 logs,
                 logs_bloom,
@@ -153,7 +154,7 @@ pub async fn insert_transaction_data(client: &Client, transaction: Transactions)
                 v ,
                 r ,
                 s
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)",
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)",
             &[
                 &transaction.block_hash,
                 &transaction.block_number,
