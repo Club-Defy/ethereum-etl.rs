@@ -1,11 +1,9 @@
 
 use crate::stream::stream::stream_data;
 use crate::provider::get_provider::get_provider;
-//use std::option::Option;
 use crate::db::db::connect_to_db;
 use clap::Parser;
 use web3::futures::FutureExt;
-//use serde::de::Unexpected::Option;
 use crate::cli::cli::{Cli};
 
 mod stream;

@@ -10,14 +10,11 @@ pub fn json_dict_to_block(json_dict: Value) -> Block {
     if let Some(transactions) = json_dict.get("transactions").and_then(|v| v.as_array()) {
         for tx in transactions {
             if let Some(tx_obj) = tx.as_object() {
-                //let transaction = json_dict_to_transaction();
                 block.transactions.push(tx.to_string());
             }
         }
     }
-
     block
-
 }
 
 

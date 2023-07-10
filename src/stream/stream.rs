@@ -10,6 +10,7 @@ use web3::futures::pending;
 use crate::exporter::export_all::export_all;
 
 use std::sync::{Arc, Mutex};
+use rayon::current_thread_index;
 
 pub async fn stream_data(p: &str, start_block: u64, end_block: Option<u64>, client: tokio_postgres::Client) -> Result<(), ()> {
     println!("Syncing blocks...");
@@ -27,6 +28,11 @@ pub async fn stream_data(p: &str, start_block: u64, end_block: Option<u64>, clie
         target_blocks.par_iter().for_each(|target_block| {
             let rt = tokio::runtime::Runtime::new().unwrap();
             let result = rt.block_on(async {
+                //let i = target_blocks.iter().position(|&r|r==target_block.clone());
+                //let mut lsb = last_synced_block.clone();
+                // if i.unwrap()!=0{
+                //      lsb = Arc::new(Mutex::new(target_blocks[i.unwrap() - 1]));
+                //     println!("lsb: {:?}",lsb);
                 export_all(*last_synced_block.lock().unwrap(), *target_block, p, &client).await
             });
             if result.is_err() {
@@ -35,7 +41,6 @@ pub async fn stream_data(p: &str, start_block: u64, end_block: Option<u64>, clie
         });
 
         if *errors_occurred.lock().unwrap() {
-            // Handle the error, such as logging it or taking appropriate action
             return Err(());
         }
 
@@ -70,17 +75,12 @@ async fn calculate_target_block(last_synced_block: u64, p : &str) -> u64 {
     target_block
 }
 
-async fn sync_data(target_block: u64) {
-    //TODO: sync data based on the target block
-}
-
 
 
 async fn get_current_block_number(provider: &str) -> u64 {
     let web3 = web3::Web3::new(web3::transports::Http::new(provider).expect("Failed to create Web3 instance"));
     let block_number = web3.eth().block_number().await.expect("Failed to get current block number");
     let current_block_number = block_number.as_u64();
-    println!("Current block : {:x}", current_block_number);
     current_block_number
 }
 
