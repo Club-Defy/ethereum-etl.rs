@@ -4,13 +4,9 @@ use tokio::fs;
 use tokio::time::sleep;
 use std::option::Option;
 use rayon::prelude::*;
-use tokio_postgres::Client;
-use web3::futures::future::ok;
-use web3::futures::pending;
 use crate::exporter::export_all::export_all;
 
 use std::sync::{Arc, Mutex};
-use rayon::current_thread_index;
 
 pub async fn stream_data(p: &str, start_block: u64, end_block: Option<u64>, client: tokio_postgres::Client) -> Result<(), ()> {
     println!("Syncing blocks...");
@@ -25,29 +21,25 @@ pub async fn stream_data(p: &str, start_block: u64, end_block: Option<u64>, clie
         }
 
         let errors_occurred = Arc::new(Mutex::new(false));
-        target_blocks.par_iter().for_each(|target_block| {
+        target_blocks.par_iter().for_each( |target_block| {
             let rt = tokio::runtime::Runtime::new().unwrap();
             let result = rt.block_on(async {
-                //let i = target_blocks.iter().position(|&r|r==target_block.clone());
-                //let mut lsb = last_synced_block.clone();
-                // if i.unwrap()!=0{
-                //      lsb = Arc::new(Mutex::new(target_blocks[i.unwrap() - 1]));
-                //     println!("lsb: {:?}",lsb);
-                export_all(*last_synced_block.lock().unwrap(), *target_block, p, &client).await
-            });
-            if result.is_err() {
+                let i = target_blocks.iter().position(|&r| r == target_block.clone());
+                let mut lsb_2 = last_synced_block.clone();
+                if i.unwrap() != 0 {
+                    lsb_2 = Arc::new(Mutex::new(target_blocks[i.unwrap() - 1]));
+                    println!("lsb: {:?}", lsb_2);
+                    export_all(*lsb_2.lock().unwrap(), *target_block, p, &client).await.expect("couldn't export all blocks");
+
+            }});
+
+            if Some(result) ==  None{
                 *errors_occurred.lock().unwrap() = true;
-            }
-        });
-
-        if *errors_occurred.lock().unwrap() {
-            return Err(());
-        }
-
-        *last_synced_block.lock().unwrap() = *target_blocks.last().unwrap_or(&last_synced_block.lock().unwrap());
+                eprintln!("could not sync blocks");
+            } });
 
         println!("Synced data. Sleeping for 10 seconds...");
-        sleep(Duration::from_secs(10)).await;
+        let _ = sleep(Duration::from_secs(10));
 
         target_blocks.clear();
     }

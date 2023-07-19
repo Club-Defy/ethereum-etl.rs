@@ -1,14 +1,11 @@
-use std::clone;
-use rayon::{current_num_threads, current_thread_index};
+use rayon::{current_thread_index};
 use reqwest::Client;
 use serde_json::Value;
-use web3::futures::{FutureExt, TryFutureExt};
 use crate::db::db::{insert_block_data, insert_transaction_data};
 use crate::json_rpc_requests::json_rpc_requests::{get_blocks_and_transaction_requests, create_transaction_receipt_request, JsonRpcRequest};
 use crate::exporter::export_all::JsonRpcResponse;
 use crate::mapper::map_blocks_and_transactions::{json_dict_to_block, json_dict_to_transaction};
 use crate::models:: {block::Block, transactions::Transactions};
-use rayon::prelude::*;
 
 
 pub async fn export_blocks_and_transactions(start: u64, end:u64, p: &str, client: &tokio_postgres::Client) -> Result<(), reqwest::Error> {
@@ -43,7 +40,7 @@ fn block_mapper(response: Value) -> Vec<Block> {
     blocks
 }
 
-fn get_block_numbers(mut start_block: u64, end: u64) -> Vec<u64> {
+fn get_block_numbers(start_block: u64, end: u64) -> Vec<u64> {
         let start = start_block;
         (start..=end).step_by(1).collect()
 }

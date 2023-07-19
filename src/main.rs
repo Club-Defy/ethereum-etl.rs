@@ -3,7 +3,6 @@ use crate::stream::stream::stream_data;
 use crate::provider::get_provider::get_provider;
 use crate::db::db::connect_to_db;
 use clap::Parser;
-use web3::futures::FutureExt;
 use crate::cli::cli::{Cli};
 
 mod stream;
