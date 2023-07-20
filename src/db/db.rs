@@ -132,7 +132,7 @@ pub async fn insert_block_data(client: &Client, block: Block) -> Result<(), Erro
 }
 
 
-pub async fn insert_transaction_data(client: &Client, transaction: Transactions) -> Result<(), Error> {
+pub async fn insert_transaction_data(client: &Client, transaction: &Transactions) -> Result<(), Error> {
 
     client
         .execute(

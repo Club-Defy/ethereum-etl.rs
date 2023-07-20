@@ -20,18 +20,21 @@ pub async fn export_blocks_and_transactions(start: u64, end:u64, p: &str, client
     for resp in resp_iter {
         let result = resp.result;
         let blocks = block_mapper(result);
-        println!("Mapped block");
+        let mut tx_hashes = vec![];
         for block in blocks {
             let block_clone = block.clone();
             let transactions = get_transactions(block_clone, p).await;
-            println!("Block: {:?}", block);
-            println!("Transactions {:?}", transactions);
+            println!("Block: {:?},\n  transactions {:?}", block, transactions);
             insert_block_data(client, block).await.expect("couldn't insert block data");
 
             for tx in transactions {
-                insert_transaction_data(client, tx).await.expect("failed to export transactions");
-
+                insert_transaction_data(client, &tx).await.expect("failed to export transactions");
+                println!("Txn Hashes: {:?}",tx_hashes);
+                tx_hashes.push(tx.clone().transaction_hash.unwrap());
+                utils::update_file(tx_hashes.clone(), String::from("src/transaction_hashes.txt")).await;
+                println!("Updated transaction hashes file");
             }
+            utils::update_file(tx_hashes.clone(), String::from("src/transaction_hashes.txt")).await;
             println!("Inserted block data into db");
         }
     }
@@ -69,14 +72,12 @@ async fn get_transactions(block: Block, p: &str) -> Vec<Transactions> {
         let requests = create_transaction_receipt_request(block.transactions);//transaction details from transaction hashes
         let response = get_response(requests, p);
         let resp_iter = response.await.unwrap();
-        let mut tx_hashes = vec![];
         for resp in resp_iter {
             let result = resp.result;
             let transaction = json_dict_to_transaction(result);
             transactions_list.push(transaction.clone());
-            tx_hashes.push(transaction.transaction_hash.unwrap());
             //insert_transaction_data(client, transactions).await.expect("failed to export transactions");
+            println!("Mapped transaction");
         }
-    utils::update_file(tx_hashes, "src/transaction_hashes.txt");
     transactions_list
 }

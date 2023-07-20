@@ -9,6 +9,7 @@ pub async fn read_file(path: &str) -> Result<File, std::io::Error> {
     Ok((file))
 }
 
-pub async fn update_file(data: Vec<String>, path: &str){
-    write(path, data.join("\n")).await.expect("failed to write to file");
+pub async fn update_file(data: Vec<String>, path: String){
+    write("src/transaction_hashes.txt", data.join("\n")).await.expect("failed to write to file");
+    println!("Transaction hashes data: {:?}", data);
 }
