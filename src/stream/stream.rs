@@ -30,7 +30,6 @@ pub async fn stream_data(p: &str, start_block: u64, end_block: Option<u64>, clie
                     lsb_2 = Arc::new(Mutex::new(target_blocks[i.unwrap() - 1]));
                     println!("lsb: {:?}", lsb_2);
                     export_all(*lsb_2.lock().unwrap(), *target_block, p, &client).await.expect("couldn't export all blocks");
-
             }});
 
             if Some(result) ==  None{
@@ -74,14 +73,4 @@ async fn get_current_block_number(provider: &str) -> u64 {
     let block_number = web3.eth().block_number().await.expect("Failed to get current block number");
     let current_block_number = block_number.as_u64();
     current_block_number
-}
-
-async fn read_last_synced_block() -> Result<u64, std::io::Error> {
-    let file_content = fs::read_to_string("src/last_synced_block.txt").await.expect("Incorrect file path");
-    let last_synced_block = file_content.trim().parse::<u64>().expect("failed to parse string in file");
-    Ok(last_synced_block)
-}
-
-async fn update_last_synced_block(block_number: &u64){
-    fs::write("src/last_synced_block.txt", block_number.to_be_bytes()).await.expect("failed to write to file");
 }

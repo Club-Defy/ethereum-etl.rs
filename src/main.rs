@@ -13,6 +13,7 @@ mod mapper;
 mod models;
 mod cli;
 mod db;
+mod utils;
 
 #[allow(dead_code)]
 #[tokio::main]
