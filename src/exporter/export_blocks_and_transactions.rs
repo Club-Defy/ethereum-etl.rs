@@ -29,12 +29,9 @@ pub async fn export_blocks_and_transactions(start: u64, end:u64, p: &str, client
 
             for tx in transactions {
                 insert_transaction_data(client, &tx).await.expect("failed to export transactions");
-                println!("Txn Hashes: {:?}",tx_hashes);
                 tx_hashes.push(tx.clone().transaction_hash.unwrap());
-                utils::update_file(tx_hashes.clone(), String::from("src/transaction_hashes.txt")).await;
-                println!("Updated transaction hashes file");
             }
-            utils::update_file(tx_hashes.clone(), String::from("src/transaction_hashes.txt")).await;
+            utils::update_file(tx_hashes.clone()).await.expect("TODO: panic message");
             println!("Inserted block data into db");
         }
     }
