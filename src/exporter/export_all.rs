@@ -14,7 +14,7 @@ pub struct JsonRpcResponse {
 
 pub async fn export_all(start_block: u64, end_block: u64, provider: &str, client: &Client) -> Result<(), reqwest::Error>  {
     export_blocks_and_transactions(start_block,end_block, provider, client).await?;
-    export_receipts_and_logs();
+    //export_receipts_and_logs(provider);
     //TODO: extract_token_transfers()
     //TODO: export_traces();
     //TODO: export_contracts();

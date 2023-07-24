@@ -1,9 +1,10 @@
-use rayon::{current_thread_index};
+use rayon::current_thread_index;
 use reqwest::Client;
 use serde_json::Value;
+use crate::exporter::export_receipts_and_logs::export_receipts_and_logs;
 use crate::db::db::{insert_block_data, insert_transaction_data};
 use crate::utils::*;
-use crate::json_rpc_requests::json_rpc_requests::{get_blocks_and_transaction_requests, create_transaction_receipt_request, JsonRpcRequest};
+use crate::json_rpc_requests::json_rpc_requests::{create_transaction_receipt_request, get_blocks_and_transaction_requests, JsonRpcRequest};
 use crate::exporter::export_all::JsonRpcResponse;
 use crate::mapper::map_blocks_and_transactions::{json_dict_to_block, json_dict_to_transaction};
 use crate::models:: {block::Block, transactions::Transactions};
@@ -13,7 +14,7 @@ use crate::utils::utils;
 pub async fn export_blocks_and_transactions(start: u64, end:u64, p: &str, client: &tokio_postgres::Client) -> Result<(), reqwest::Error> {
     let list_of_block_numbers = get_block_numbers(start, end);
     let requests = get_blocks_and_transaction_requests(list_of_block_numbers);
-    let response = get_response(requests, p);
+    let response = utils::get_response(requests, p);
     let resp_iter = response.await.unwrap();
 
     println!("Current thread: {:?}", current_thread_index());
@@ -30,6 +31,7 @@ pub async fn export_blocks_and_transactions(start: u64, end:u64, p: &str, client
             for tx in transactions {
                 insert_transaction_data(client, &tx).await.expect("failed to export transactions");
                 tx_hashes.push(tx.clone().transaction_hash.unwrap());
+                export_receipts_and_logs(tx_hashes.clone(),p).await;
             }
             utils::update_file(tx_hashes.clone()).await.expect("TODO: panic message");
             println!("Inserted block data into db");
@@ -49,25 +51,10 @@ fn get_block_numbers(start_block: u64, end: u64) -> Vec<u64> {
         (start..=end).step_by(1).collect()
 }
 
-async fn get_response(requests : Vec<JsonRpcRequest>, provider : &str) -> Result<Vec<JsonRpcResponse>, reqwest::Error> {
-
-    let client = Client::new();
-
-    let response = client
-        .post(provider)
-        .json(&requests)
-        .send()
-        .await?
-        .json::<Vec<JsonRpcResponse>>()
-        .await?;
-
-    Ok(response)
-}
-
 async fn get_transactions(block: Block, p: &str) -> Vec<Transactions> {
     let mut transactions_list: Vec<Transactions> = vec![];
         let requests = create_transaction_receipt_request(block.transactions);//transaction details from transaction hashes
-        let response = get_response(requests, p);
+        let response = utils::get_response(requests, p);
         let resp_iter = response.await.unwrap();
         for resp in resp_iter {
             let result = resp.result;

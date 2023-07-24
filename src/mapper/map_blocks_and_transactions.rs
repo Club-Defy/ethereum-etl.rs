@@ -1,7 +1,8 @@
 
 use serde_json::{Value};
-use crate::models::transactions::Transactions;
+use crate::models::{transactions::Transactions, receipt::Receipt};
 use crate::models::block::Block;
+use crate::models::receiptlog::ReceiptLog;
 
 pub fn json_dict_to_block(json_dict: Value) -> Block {
     let mut block: Block = serde_json::from_value(json_dict.clone()).expect("failed to deserialize");
@@ -21,4 +22,15 @@ pub fn json_dict_to_transaction(json_dict: Value) -> Transactions {
     let txn: Transactions = serde_json::from_value(json_dict.clone()).expect("failed to deserialize transactions");
     txn
 }
+
+pub fn json_dict_to_receipts(json_dict: Value) -> Receipt {
+    let receipt: Receipt = serde_json::from_value(json_dict.clone()).expect("failed to deserialize receipt");
+    receipt
+}
+
+pub fn json_dict_to_receiptlogs(json_dict: Value) -> ReceiptLog {
+    let receipt_log: ReceiptLog = serde_json::from_value(json_dict.clone()).expect("failed to deserialize receipt logs");
+    receipt_log
+}
+
 
