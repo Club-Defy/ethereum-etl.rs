@@ -1,12 +1,11 @@
-
+use rayon::{current_thread_index};
 use reqwest::Client;
 use serde_json::Value;
-use web3::futures::TryFutureExt;
-use crate::db::db::insert_block_data;
-use crate::json_rpc_requests::json_rpc_requests::{get_blocks_and_transaction_requests, JsonRpcRequest};
+use crate::db::db::{insert_block_data, insert_transaction_data};
+use crate::json_rpc_requests::json_rpc_requests::{get_blocks_and_transaction_requests, create_transaction_receipt_request, JsonRpcRequest};
 use crate::exporter::export_all::JsonRpcResponse;
-use crate::mapper::mapper::json_dict_to_block;
-use crate::models::block::Block;
+use crate::mapper::map_blocks_and_transactions::{json_dict_to_block, json_dict_to_transaction};
+use crate::models:: {block::Block, transactions::Transactions};
 
 
 pub async fn export_blocks_and_transactions(start: u64, end:u64, p: &str, client: &tokio_postgres::Client) -> Result<(), reqwest::Error> {
@@ -14,27 +13,26 @@ pub async fn export_blocks_and_transactions(start: u64, end:u64, p: &str, client
     let requests = get_blocks_and_transaction_requests(list_of_block_numbers);
     let response = get_response(requests, p);
     let resp_iter = response.await.unwrap();
-    // if resp_iter.is_err() {
-    //     println!("{}", &resp_iter.err().unwrap());
-    //     return;
-    // }
-    //     let x = resp_iter.into_iter();
 
+    println!("Current thread: {:?}", current_thread_index());
     for resp in resp_iter {
-        // for resp in rpc_response {
-            let result = resp.result;
-            let blocks = block_mapper(result);
-            println!("Mapped block");
-            for block in blocks {
-                println!("Block: {:?}", block);
-                insert_block_data(client, block).await.expect("TODO: panic message");
-                println!("Inserted block data into db");
-            // }
+        let result = resp.result;
+        let blocks = block_mapper(result);
+        println!("Mapped block");
+        for block in blocks {
+            let block_clone = block.clone();
+            let transactions = get_transactions(block_clone, p).await;
+            println!("Block: {:?}", block);
+            println!("Transactions {:?}", transactions);
+            insert_block_data(client, block).await.expect("couldn't insert block data");
+            for tx in transactions {
+                insert_transaction_data(client, tx).await.expect("failed to export transactions");
+            }
+            println!("Inserted block data into db");
         }
-    };
+    }
     Ok(())
 }
-
 fn block_mapper(response: Value) -> Vec<Block> {
     let mut blocks = Vec::new();
     let mapped_block = json_dict_to_block(response);
@@ -42,7 +40,7 @@ fn block_mapper(response: Value) -> Vec<Block> {
     blocks
 }
 
-fn get_block_numbers(mut start_block: u64, end: u64) -> Vec<u64> {
+fn get_block_numbers(start_block: u64, end: u64) -> Vec<u64> {
         let start = start_block;
         (start..=end).step_by(1).collect()
 }
@@ -60,4 +58,20 @@ async fn get_response(requests : Vec<JsonRpcRequest>, provider : &str) -> Result
         .await?;
 
     Ok(response)
+}
+
+async fn get_transactions(block: Block, p: &str) -> Vec<Transactions> {
+    let mut transactions_list: Vec<Transactions> = vec![];
+        let requests = create_transaction_receipt_request(block.transactions);//transaction details from transaction hashes
+        let response = get_response(requests, p);
+        let resp_iter = response.await.unwrap();
+
+        for resp in resp_iter {
+            let result = resp.result;
+            let transaction = json_dict_to_transaction(result);
+            transactions_list.push(transaction);
+            //insert_transaction_data(client, transactions).await.expect("failed to export transactions");
+            println!("Inserted block data into db");
+        }
+    transactions_list
 }

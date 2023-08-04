@@ -1,7 +1,6 @@
 
 use serde::{Deserialize};
 use tokio_postgres::Client;
-use crate::json_rpc_requests::json_rpc_requests::{json_rpc_requests};
 use crate::exporter::export_blocks_and_transactions::export_blocks_and_transactions;
 
 

@@ -1,6 +1,7 @@
 
 use tokio_postgres::{NoTls, Error, Client};
 use crate::models::block::Block;
+use crate::models::transactions::Transactions;
 
 pub async fn connect_to_db() -> Client {
     let (client, connection) = tokio_postgres::connect("host=localhost user=postgres password=postgres dbname=ethereum_etl", NoTls).await.expect("failed to initialize client");
@@ -39,8 +40,34 @@ pub async fn connect_to_db() -> Client {
             )",
             &[],
         )
+        .await.expect("failed to create tables");
+
+    client
+        .execute(
+            "CREATE TABLE IF NOT EXISTS transactions_new (
+                block_hash VARCHAR,
+                block_number VARCHAR,
+                contract_address VARCHAR,
+                cumulative_gas_used VARCHAR,
+                effective_gas_price VARCHAR,
+                from_tx VARCHAR,
+                gas_used VARCHAR,
+                logs VARCHAR[],
+                logs_bloom VARCHAR,
+                root VARCHAR,
+                to_tx VARCHAR,
+                transaction_index VARCHAR,
+                transaction_hash VARCHAR,
+                chain_id VARCHAR,
+                v VARCHAR,
+                r VARCHAR,
+                s VARCHAR
+            )",
+            &[],
+        )
         .await.expect("failed to create table");
-    println!("Created table blocks...");
+
+    println!("Created table transactions...");
     client
 
 }
@@ -100,6 +127,56 @@ pub async fn insert_block_data(client: &Client, block: Block) -> Result<(), Erro
         )
         .await.expect("could not insert data");
     println!("Inserted block data...");
+
+    Ok(())
+}
+
+
+pub async fn insert_transaction_data(client: &Client, transaction: Transactions) -> Result<(), Error> {
+
+    client
+        .execute(
+            "INSERT INTO transactions_new (
+                block_hash,
+                block_number,
+                contract_address ,
+                cumulative_gas_used,
+                effective_gas_price,
+                from_tx,
+                gas_used,
+                logs,
+                logs_bloom,
+                root ,
+                to_tx ,
+                transaction_index ,
+                transaction_hash ,
+                chain_id ,
+                v ,
+                r ,
+                s
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)",
+            &[
+                &transaction.block_hash,
+                &transaction.block_number,
+                &transaction.contract_address,
+                &transaction.cumulative_gas_used,
+                &transaction.effective_gas_price,
+                &transaction.from,
+                &transaction.gas_used,
+                &transaction.logs,
+                &transaction.logs_bloom,
+                &transaction.root,
+                &transaction.to,
+                &transaction.transaction_index,
+                &transaction.transaction_hash,
+                &transaction.chain_id,
+                &transaction.v,
+                &transaction.r,
+                &transaction.s,
+            ],
+        )
+        .await.expect("could not insert data");
+    println!("Inserted transaction data...");
 
     Ok(())
 }

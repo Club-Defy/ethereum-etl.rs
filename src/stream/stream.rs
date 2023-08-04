@@ -3,30 +3,51 @@ use std::time::Duration;
 use tokio::fs;
 use tokio::time::sleep;
 use std::option::Option;
-use tokio_postgres::Client;
-use web3::futures::future::ok;
-use web3::futures::pending;
+use rayon::prelude::*;
 use crate::exporter::export_all::export_all;
 
+use std::sync::{Arc, Mutex};
+
 pub async fn stream_data(p: &str, start_block: u64, end_block: Option<u64>, client: tokio_postgres::Client) -> Result<(), ()> {
+    println!("Syncing blocks...");
+    let last_synced_block = Arc::new(Mutex::new(start_block));
+    let mut target_blocks = vec![];
+    while end_block.is_none() || Some(*last_synced_block.lock().unwrap()) < end_block {
+        let mut lsb = *last_synced_block.lock().unwrap();
+        while end_block.is_none() || Some(lsb) < end_block {
+            let tb = calculate_target_block(lsb, p).await;
+            target_blocks.push(tb);
+            lsb = tb;
+        }
 
-        println!("Syncing blocks...");
-        let mut last_synced_block = start_block;
+        let errors_occurred = Arc::new(Mutex::new(false));
+        target_blocks.par_iter().for_each( |target_block| {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let result = rt.block_on(async {
+                let i = target_blocks.iter().position(|&r| r == target_block.clone());
+                let mut lsb_2 = last_synced_block.clone();
+                if i.unwrap() != 0 {
+                    lsb_2 = Arc::new(Mutex::new(target_blocks[i.unwrap() - 1]));
+                    println!("lsb: {:?}", lsb_2);
+                    export_all(*lsb_2.lock().unwrap(), *target_block, p, &client).await.expect("couldn't export all blocks");
 
-        while end_block==None || Some(last_synced_block)<end_block {
-            let target_block = calculate_target_block(last_synced_block, p).await;
-            //sync_data(target_block).await;
-            //add batches of blocks
-            export_all(last_synced_block, target_block, p, &client).await.expect("failed to export entity");
-            last_synced_block = target_block;
-            update_last_synced_block(&last_synced_block).await;
-            println!("Synced data.Sleeping for 10 seconds...");
-            //last_synced_block = Option::from(read_last_synced_block().await.expect("Todo panic message"));
-            sleep(Duration::from_secs(10)).await;
+            }});
+
+            if Some(result) ==  None{
+                *errors_occurred.lock().unwrap() = true;
+                eprintln!("could not sync blocks");
+            } });
+
+        println!("Synced data. Sleeping for 10 seconds...");
+        let _ = sleep(Duration::from_secs(10));
+
+        target_blocks.clear();
     }
+
     println!("All blocks have been synced.");
     Ok(())
 }
+
 
 
 async fn calculate_target_block(last_synced_block: u64, p : &str) -> u64 {
@@ -44,10 +65,6 @@ async fn calculate_target_block(last_synced_block: u64, p : &str) -> u64 {
         target_block
     };
     target_block
-}
-
-async fn sync_data(target_block: u64) {
-    //TODO: sync data based on the target block
 }
 
 

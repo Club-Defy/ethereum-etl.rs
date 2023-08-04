@@ -1,34 +1,37 @@
-#[derive(Debug)]
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Transactions{
     pub block_hash: Option<String>,
     //The hash of the block where this log was in. null when it's a pending log
-    pub block_number: Option<u64>,
+    pub block_number: Option<String>,
     //The block number where this log was in. null when it's a pending log
-    pub tx_from: Option<String>,
+    pub contract_address: Option<String>,
     //The address of the sender
-    pub sender_gas: Option<u64>,
+    pub cumulative_gas_used: Option<String>,
     //The gas provided by the sender, encoded as hexadecimal
-    pub gas_price: Option<u64>,
+    pub effective_gas_price: Option<String>,
     //The gas price provided by the sender in wei, encoded as hexadecimal
-    pub max_fee_per_gas: Option<u64>,
+    pub from: Option<String>,
     //The maximum fee per gas set in the transaction
-    pub max_priority_fee_per_gas: Option<u64>,
+    pub gas_used: Option<String>,
     //The maximum priority gas fee set in the transaction
-    pub tx_hash: Option<String>,
+    pub logs: Option<Vec<String>>,
     //The hash of the transaction
-    pub input: Option<String>,
+    pub logs_bloom: Option<String>,
     //The data sent along with the transaction
-    pub nonce: Option<u64>,
+    pub root: Option<String>,
     //The number of transactions made by the sender prior to this one encoded as hexadecimal
-    pub tx_to: Option<String>,
+    pub to: Option<String>,
     //The address of the receiver. null when it's a contract creation transaction
     pub transaction_index: Option<String>,
     //The integer of the transaction's index position that the log was created from. null when it's a pending log
-    pub value: Option<String>,
+    pub transaction_hash: Option<String>,
     //The value transferred in wei encoded as hexadecimal
-    pub tx_type: Option<String>,
+    //pub type: Option<String>,
     //The transaction type
-    pub chain_id: Option<u32>,
+    pub chain_id: Option<String>,
     //The chain id of the transaction, if any
     pub v:Option<String>,
     //The standardized V field of the signature
